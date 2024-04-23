@@ -43,7 +43,12 @@ int main(){
             startDeck(cards, &players[i], 7);
         }
         //while (!winnerCheck){
-            showDeck(&players[0]); //player 1 goes first
+            for (int i = 0; i < numPlayers; i++){
+                printf("Player %d Deck: \n", i + 1);
+                showDeck(&players[i]);
+            }
+
+
         //}
         return 0;
     }
@@ -79,16 +84,19 @@ bool isCardAvailable(card cards, card deck[], int numCards) {
 }
 
 void showDeck(Player* player){
-    printf("+---------------------+  +---------------------+  +---------------------+  +---------------------+  +---------------------+  +---------------------+  +---------------------+\n");
-    printf("|       Ability       |  |       Ability       |  |       Ability       |  |       Ability       |  |       Ability       |  |       Ability       |  |       Ability       |\n");
-    printf("+---------------------+  +---------------------+  +---------------------+  +---------------------+  +---------------------+  +---------------------+  +---------------------+\n");
-    for (int i = 0; i < 7; i++) {
-        printf("| %-20s |  ", player->hand[i].action);
+    for (int i = 0; i < 7; i++){
+        printf("|%-12s| ", player->hand[i].action);
     }
     printf("\n");
     for (int i = 0; i < 7; i++) {
-        printf("|       %5d         |  ", player->hand[i].value);
+        printf("|     %d     | ", player->hand[i].value);
     }
     printf("\n");
-    printf("+---------------------+  +---------------------+  +---------------------+  +---------------------+  +---------------------+  +---------------------+  +---------------------+\n");
+    for (int i = 0; i < 7; i++) {
+        printf("|  Option:[%d]| ", i+1);
+    }
+    printf("\n");
+    printf("\n");
 }
+
+//void roundMove()
