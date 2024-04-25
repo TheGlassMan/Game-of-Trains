@@ -112,8 +112,8 @@ void round1Move(Player* player, int playerNum, card cards[], card centerCards[])
     int centerPlace = 1;
     int cardHand, cardDeck;//card hand is the one in hand and card deck is the ones from the deck you grab
     int cardOnTable = 4;
-    int randNum[4];
-    int cardKeep = 0;
+    int randNum[4]; // used to grab from deck
+    int cardKeep = 0; //card the person decided to keep and swap and the other gets discarded
     card temp;
     bool validInput = false;
     printf("Player %d turn:\n", playerTurn);
@@ -126,8 +126,10 @@ void round1Move(Player* player, int playerNum, card cards[], card centerCards[])
             randNum[j] = i;
         }
     }
-    for (int j = 3; j >= 0; j--) {
+    for (int j = 0; j <= 0; j++) {
+        k = 0;
         if (strcmp(centerCards[j].place, "Center") == 0){
+            cards[randNum[k]] = centerCards[j];
             printf("|%-12s| ", centerCards[j].action);
             printf("\n");
             printf("|     %d     | ", centerCards[j].value);
@@ -140,11 +142,11 @@ void round1Move(Player* player, int playerNum, card cards[], card centerCards[])
     }
     //prints out random card to choose
     for (k = 0; k < playerNum; k++) {
-        printf("|%-12s| ", cards[randNum[k]].action);
+        printf("|%-12s| ", cards[randNum[k+1]].action);
     }
     printf("\n");
     for (k = 0; k < playerNum; k++) {
-        printf("|     %d     | ", cards[randNum[k]].value);
+        printf("|     %d     | ", cards[randNum[k+1]].value);
     }
     printf("\n");
     for (k = 0; k < playerNum; k++) {
@@ -224,7 +226,7 @@ void round1Move(Player* player, int playerNum, card cards[], card centerCards[])
 
             if ((cardHand >= 0 && cardHand < 7) && (cardDeck >= 0 && cardDeck < 4)) {
                 validInput = true;
-                strcpy(cards[randNum[cardDeck]].place, "Hand");
+                strcpy(cards[randNum[cardDeck]].place, "Hand"); //fix this here too
                 temp = cards[randNum[cardDeck]];
                 cards[randNum[cardDeck]] = player->hand[cardHand];
                 player->hand[cardHand] = temp;
