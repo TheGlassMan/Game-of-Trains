@@ -238,7 +238,7 @@ void round1Move(Player* player, int playerNum, card cards[], card centerCards[])
                 centerPlace++;
             }
             printf("\n");
-            printf("Which card would you like to swap with a card from your hand with card \n");
+            printf("Which card would you like to swap with Option [%d] from your hand? \n", playerTurn);
             for (int i = 0; i < 7; i++) {
                 printf("|%-12s| ", player->hand[i].action);
             }
@@ -255,9 +255,9 @@ void round1Move(Player* player, int playerNum, card cards[], card centerCards[])
             cardHand--;
             if ((cardHand >= 0 && cardHand < 7) && (cardDeck >= 0 && cardDeck < 4)) {
                 validInput = true;
-                centerCards[cardKeep] = player->hand[cardHand];
-                strcpy(cards[randNum[cardDeck]].place, "Hand");
-                player->hand[cardHand] = cards[randNum[cardDeck]];
+                centerCards[playerTurn - 1] = cards[randNum[cardKeep]];
+                strcpy(cards[randNum[cardKeep]].place, "Hand");
+                player->hand[cardHand] = cards[randNum[cardKeep]];
                 strcpy(centerCards[cardKeep].place, "Center");
             } else {
                 printf("Invalid option. Please select a number between 1 and 7.\n");
