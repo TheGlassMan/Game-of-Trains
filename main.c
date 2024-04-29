@@ -1,3 +1,4 @@
+// NOTE: Current version only works for 2 players :(
 #include <stdio.h>
 #include <stdbool.h>
 #include <stdlib.h>
@@ -19,17 +20,30 @@ void startDeck(card cards[], Player* player, int numCards);
 void showDeck(Player* player); //Show player their deck
 bool isCardAvailable(card cards, card deck[], int numCards);
 void round1Move(Player* player, int playerNum, card cards[], card centerCards[]);
-int main(){
+void gamePlay(Player* player, int playerNum, card cards[], card centerCards[]);
+bool winner(Player* player);
+int main() {
     srand(time(NULL));
-    FILE* cardfile = NULL;
-    cardfile = fopen("sampledeck.txt", "r");
+
     card cards[84];
     Player players[4];
     card centerCards[6];
     bool winnerCheck = false;
     int numPlayers; //number of players 2-4
-
-    if (cardfile == NULL){
+    char answer;
+    char filename[20];
+    FILE *cardfile = NULL;
+    printf("Would you like to use a custom deck? (y/n)\n");
+    scanf(" %c", &answer);
+    if (answer == 'y'){
+        printf("Please enter the name of the file?\n");
+        scanf("%s", filename);
+        cardfile = fopen(filename, "r");
+    }
+    else{
+        cardfile = fopen("sampledeck.txt", "r");
+    }
+    if (cardfile == NULL) {
         printf("File DNE");
     }
     else {
@@ -44,20 +58,24 @@ int main(){
         for (int i = 0; i < numPlayers; i++) {
             startDeck(cards, &players[i], 7);
         }
-        //while (!winnerCheck){
-            for (int i = 0; i < numPlayers; i++) {
-                printf("Player %d Deck: \n", i + 1);
-                showDeck(&players[i]);
-
-            }
         for (int i = 0; i < numPlayers; i++) {
             round1Move(&players[i], i + 1, cards, centerCards);
         }
-
-
-        //}
-        return 0;
+        int i = 0;
+        while (!winner(&players[i])) {
+            gamePlay(&players[i], i + 1, cards, centerCards);
+            winner(&players[i]);
+            if (i == 4) {
+                i = 0;
+            }
+            else{
+                i++;
+            }
+        }
+        printf("Game over!\n");
+        printf("The winner is Player %d", i+1);
     }
+    return 0;
 }
 void assignCards(card cards[], FILE* inp){
     for (int i = 0; i < 84; i++){
@@ -119,7 +137,9 @@ void round1Move(Player* player, int playerNum, card cards[], card centerCards[])
     printf("Cards on table: \n");
     for (int j = 0; j < 10; j++) {
         i = rand() % 84;
-        if (strcmp(cards[i].place, "Hand") == 0){
+        if (strcmp(cards[i].place, "Hand") == 0 ||
+            strcmp(cards[i].place, "Discard") == 0 ||
+            strcmp(cards[i].place, "Center") == 0) {
             j--;
         }
         else{
@@ -140,9 +160,9 @@ void round1Move(Player* player, int playerNum, card cards[], card centerCards[])
     }
     printf("\n");
     for (k = 0; k < playerNum; k++) {
-        printf("|     %d     | 0", cards[randNum[k]].value);
+        printf("|     %d     | ", cards[randNum[k]].value);
         if (k >= 1) {
-            printf("|     %d     | 1", cards[randNum[k + 1]].value);
+            printf("|     %d     | ", cards[randNum[k + 1]].value);
         }
     }
     printf("\n");
@@ -150,7 +170,7 @@ void round1Move(Player* player, int playerNum, card cards[], card centerCards[])
         printf("|  Option:[%d]| ", centerPlace);
         centerPlace++;
         if (k >= 1){
-            printf("|  Option:[%d]| d", centerPlace);
+            printf("|  Option:[%d]|", centerPlace);
             k++;
         }
 
@@ -214,7 +234,9 @@ void round1Move(Player* player, int playerNum, card cards[], card centerCards[])
                 printf("Invalid Input\n");
                 scanf("%d", &cardKeep);
             }
+            strcpy(cards[randNum[playerTurn]].place, "Discard");
             cards[randNum[playerTurn - 1]] = cards[randNum[cardKeep]];
+            strcpy(cards[randNum[playerTurn - 1]].place, "Center");
             centerCards[playerTurn - 1] = cards[randNum[cardKeep]];
             printf("Cards on table: \n");
             centerPlace = 1;
@@ -286,3 +308,24 @@ void round1Move(Player* player, int playerNum, card cards[], card centerCards[])
     playerTurn++;
 }
 
+void gamePlay(Player* player, int playerNum, card cards[], card centerCards[]){
+    //Start the acutal game lol
+}
+
+bool winner(Player* player){
+    int counter = 0;
+    for (int i = 0; i < 6; i++){
+        if (player->hand[i].value < player->hand[i+1].value){
+            counter++;
+        }
+        else{
+            break;
+        }
+    }
+    if (counter == 6){
+        return true;
+    }
+    else{
+        return false;
+    }
+}
