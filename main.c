@@ -1,4 +1,5 @@
 // NOTE: Current version only works for 2 players :(
+// here is my github for documentation : https://github.com/TheGlassMan/Game-of-Trains
 #include <stdio.h>
 #include <stdbool.h>
 #include <stdlib.h>
@@ -12,24 +13,25 @@ typedef struct {
 typedef struct {
     card hand[7];
 } Player;
-int playerTurn = 1;
-
+int playerTurn = 1, cardTable = 0;
+int numPlayers = 0; //number of players 2-4
+bool cardPicked = false; //indicates if card was pciked from pile so now we have 3 cards at center table
+bool removeMiddle = false, removeRight = false, removeLeft = false;
 void assignCards(card cards[], FILE* inp);
 void shuffleCards(card cards[], int numCards);
 void startDeck(card cards[], Player* player, int numCards);
 void showDeck(Player* player); //Show player their deck
-bool isCardAvailable(card cards, card deck[], int numCards);
 void round1Move(Player* player, int playerNum, card cards[], card centerCards[]);
 void gamePlay(Player* player, int playerNum, card cards[], card centerCards[]);
 bool winner(Player* player);
+void cardAbility(Player* player, int playerNum, card cards[], card centerCards[]);
 int main() {
     srand(time(NULL));
-
     card cards[84];
     Player players[4];
     card centerCards[6];
     bool winnerCheck = false;
-    int numPlayers; //number of players 2-4
+    bool validInput = false;
     char answer;
     char filename[20];
     FILE *cardfile = NULL;
@@ -48,28 +50,45 @@ int main() {
     }
     else {
         assignCards(cards, cardfile);
+        for (int i = 0; i < 84; i++) {
+            strcpy(cards[i].place, "Deck");
+        }
         fclose(cardfile);
         printf("How many players are playing? (2-4)\n");
-        scanf("%d", &numPlayers);
-        while (numPlayers < 2 || numPlayers > 4) {
-            printf("Invalid number of players. Please enter a number between 2 and 4: \n");
+        while (!validInput){
             scanf("%d", &numPlayers);
+            if (numPlayers > 1 && numPlayers <= 4){
+                validInput = true;
+                break;
+            }
+            else{
+                printf("Invalid number of players. Please enter a number between 2 and 4: \n");
+            }
         }
+        shuffleCards(cards, 84);
         for (int i = 0; i < numPlayers; i++) {
             startDeck(cards, &players[i], 7);
+        }
+        for (int i = 0; i < numPlayers; i++) {
+            printf("Player %d Deck: \n", i + 1);
+            showDeck(&players[i]);
+
         }
         for (int i = 0; i < numPlayers; i++) {
             round1Move(&players[i], i + 1, cards, centerCards);
         }
         int i = 0;
+        playerTurn = 1;
         while (!winner(&players[i])) {
             gamePlay(&players[i], i + 1, cards, centerCards);
             winner(&players[i]);
-            if (i == 4) {
+            if (i == numPlayers - 1) {
                 i = 0;
+                playerTurn = 1;
             }
             else{
                 i++;
+                playerTurn++;
             }
         }
         printf("Game over!\n");
@@ -84,12 +103,18 @@ void assignCards(card cards[], FILE* inp){
 }
 
 void startDeck(card cards[], Player* player, int numCards) {
-    shuffleCards(cards, 84);
+    int rando;
     for (int i = 0; i < numCards; i++) {
-        strcpy(cards[i].place, "Hand");
-        player->hand[i] = cards[i];
+        rando = rand() % 84;
+        if (strcmp(cards[rando].place, "Hand") != 0){
+            strcpy(cards[rando].place, "Hand");
+            player->hand[i] = cards[rando];
+        }
+        else{
+            i--;
+        }
+        }
     }
-}
 
 void shuffleCards(card cards[], int numCards) {
     for (int i = numCards - 1; i > 0; i--) {
@@ -98,14 +123,6 @@ void shuffleCards(card cards[], int numCards) {
         cards[i] = cards[j];
         cards[j] = temp;
     }
-}
-bool isCardAvailable(card cards, card deck[], int numCards) {
-    for (int i = 0; i < numCards; i++) {
-        if (deck[i].value == cards.value && strcmp(deck[i].action, cards.action) == 0) {
-            return true;
-        }
-    }
-    return false;
 }
 
 void showDeck(Player* player){
@@ -309,7 +326,423 @@ void round1Move(Player* player, int playerNum, card cards[], card centerCards[])
 }
 
 void gamePlay(Player* player, int playerNum, card cards[], card centerCards[]){
-    //Start the acutal game lol
+    int turnChoice; // will be used to indicate if the player chose to grab from deck or ability
+    bool validInput1 = false;
+    bool validInput2 = false;
+    bool validInput3 = false;
+    bool validInput4 = false;
+    int cardChoice, moveCard, moveCard2;
+    int randNum[1];
+    char *protectedLeft = strstr(player->hand[0].place, "(P)");
+    char *protectedRight = strstr(player->hand[6].place, "(P)");
+    char *protectedMiddle = strstr(player->hand[3].place, "(P)");
+    card temp;
+    //card picker :)
+    if (removeLeft && protectedLeft == NULL){
+        for (int j = 0; j < 1; j++) {
+            int rando = rand() % 84;
+            if (strcmp(cards[rando].place, "Hand") == 0 ||
+                strcmp(cards[rando].place, "Discard") == 0 ||
+                strcmp(cards[rando].place, "Center") == 0) {
+                j--;
+            } else {
+                temp = player->hand[0];
+                strcpy(cards[rando].place, "Hand");
+                player->hand[0] = cards[rando];
+                centerCards[cardTable+2] = temp;
+                cardTable++;
+            }
+        }
+        removeLeft = false;
+    }
+    else if (removeMiddle && protectedMiddle == NULL){
+        for (int j = 0; j < 1; j++) {
+            int rando = rand() % 84;
+            if (strcmp(cards[rando].place, "Hand") == 0 ||
+                strcmp(cards[rando].place, "Discard") == 0 ||
+                strcmp(cards[rando].place, "Center") == 0) {
+                j--;
+            } else {
+                temp = player->hand[3];
+                strcpy(cards[rando].place, "Hand");
+                player->hand[3] = cards[rando];
+                centerCards[cardTable+2] = temp;
+                cardTable++;
+            }
+        }
+        removeMiddle = false;
+    }
+    else if (removeRight && protectedRight == NULL){
+        for (int j = 0; j < 1; j++) {
+            int rando = rand() % 84;
+            if (strcmp(cards[rando].place, "Hand") == 0 ||
+                strcmp(cards[rando].place, "Discard") == 0 ||
+                strcmp(cards[rando].place, "Center") == 0) {
+                j--;
+            } else {
+                temp = player->hand[6];
+                strcpy(cards[rando].place, "Hand");
+                player->hand[6] = cards[rando];
+                centerCards[cardTable+2] = temp;
+                cardTable++;
+            }
+        }
+        removeRight = false;
+    }
+        for (int j = 0; j < 1; j++) {
+            int rando = rand() % 84;
+            if (strcmp(cards[rando].place, "Hand") == 0 ||
+                strcmp(cards[rando].place, "Discard") == 0 ||
+                strcmp(cards[rando].place, "Center") == 0) {
+                j--;
+            } else {
+                randNum[j] = rando;
+            }
+        }
+        printf("Player %d turn\n", playerTurn);
+        printf("Cards on table:\n");
+        //Prints cards on table
+        if (cardPicked) {
+            for (int i = 0; i < numPlayers + cardTable; i++) {
+                if (strcmp(cards[i].place, "Discard") == 0) {
+                    centerCards[i] = centerCards[i+1];
+                }
+                else{
+                    printf("|%-12s| ", centerCards[i].action);
+                }
+            }
+            printf("\n");
+            for (int i = 0; i < numPlayers + cardTable; i++) {
+                if (strcmp(cards[i].place, "Discard") != 0) {
+                    printf("|     %d     | ", centerCards[i].value);
+                }
+            }
+            printf("\n");
+            for (int i = 0; i < numPlayers + cardTable; i++) {
+                if (strcmp(cards[i].place, "Discard") != 0) {
+                    printf("|  Option:[%d]| ", i + 1);
+                }
+            }
+            printf("\n");
+            printf("\n");
+        } else {
+            for (int i = 0; i < numPlayers; i++) {
+                printf("|%-12s| ", centerCards[i].action);
+            }
+            printf("\n");
+            for (int i = 0; i < numPlayers; i++) {
+                printf("|     %d     | ", centerCards[i].value);
+            }
+            printf("\n");
+            for (int i = 0; i < numPlayers; i++) {
+                printf("|  Option:[%d]| ", i + 1);
+            }
+            printf("\n");
+            printf("\n");
+        }
+        printf("Player %d cards:\n", playerTurn);
+        //prints players cards
+        for (int i = 0; i < 7; i++) {
+            printf("|%-12s| ", player->hand[i].action);
+        }
+        printf("\n");
+        for (int i = 0; i < 7; i++) {
+            printf("|     %d     | ", player->hand[i].value);
+        }
+        printf("\n");
+        for (int i = 0; i < 7; i++) {
+            printf("|  Option:[%d]| ", i + 1);
+        }
+        printf("\n");
+        printf("What would you like to grab card from pile or use ability of a card on the table?\nEnter number for option\n1: Grab card from deck\n2: Use ability\n");
+        while (!validInput1) {
+            scanf("%d", &turnChoice);
+            if (turnChoice == 1 || turnChoice == 2) {
+                validInput1 = true;
+                break;
+            } else {
+                printf("Invalid input");
+            }
+        }
+    if (turnChoice == 1){
+
+        printf("Card you picked up:\n");
+        printf("|%-12s| ", cards[randNum[0]].action);
+        printf("\n");
+        printf("|     %d     | ", cards[randNum[0]].value);
+        printf("\n");
+        printf("|  Option:[1]| ");
+        printf("\n");
+        printf("Which card in your hand would you like to swap with the card you picked up?\n");
+        scanf("%d", &cardChoice);
+        cardChoice--;
+        strcpy(cards[randNum[0]].place, "Hand");
+        cards[randNum[0]] = player->hand[cardChoice];
+        centerCards[cardTable+2] = cards[randNum[0]];
+        strcpy(centerCards[2].place, "Center");
+        cardPicked = true;
+        cardTable++;
+        printf("Player %d cards:\n", playerTurn);
+        //prints cards
+        for (int i = 0; i < 7; i++) {
+            printf("|%-12s| ", player->hand[i].action);
+        }
+        printf("\n");
+        for (int i = 0; i < 7; i++) {
+            printf("|     %d     | ", player->hand[i].value);
+        }
+        printf("\n");
+        for (int i = 0; i < 7; i++) {
+            printf("|  Option:[%d]| ", i + 1);
+        }
+    }
+    else{
+        printf("Which card ability would you like to use from the table cards?\n");
+        while (!validInput2){
+            scanf("%d", &cardChoice);
+            cardChoice--;
+            if (cardChoice >= 0 && cardChoice < 2){
+                validInput2 = true;
+                break;
+            }
+        }
+
+        // down below will be card ability based on centercard.action
+        while (!validInput3){
+            if (strcmp(centerCards[cardChoice].action, "shift2Right") == 0){
+                if (strcmp(player->hand[cardChoice].place, "Protected") == 0){
+                    printf("Card is protected choose another card");
+                }
+                else{
+                    printf("Which card would you like to move two to the right?(Cannot be 6 or 7)\n");
+                    while (!validInput4){
+                        scanf("%d", &moveCard);
+                        moveCard--;
+                        if (moveCard < 5){
+                            validInput4 = true;
+                            break;
+                        }
+                        else{
+                            printf("Invalid choose another card\n");
+                        }
+                    }
+                    temp = player->hand[moveCard];
+                    for (int i = 0; i < 6; i++) {
+                        player->hand[i] = player->hand[i + 1];
+                    }
+                    player->hand[moveCard+2] = temp;
+
+                    strcpy(centerCards[cardChoice].place, "Discard");
+                    validInput3 = true;
+                }
+            }
+            else if (strcmp(centerCards[cardChoice].action, "protect") == 0){
+                if (strcmp(player->hand[cardChoice].place, "Protected") == 0){
+                    printf("Card is already protected choose another card");
+                }
+                else {
+                    printf("Which card would you like to protect?\n");
+                    scanf("%d", &cardChoice);
+                    cardChoice--;
+                    strcpy(player->hand[cardChoice].place, "Protected");
+                    strcat(player->hand[cardChoice].action, "(P)");
+                    strcpy(centerCards[cardChoice].place, "Discard");
+                    validInput3 = true;
+
+                }
+            }
+            else if (strcmp(centerCards[cardChoice].action, "shift2Left") == 0){
+                if (strcmp(player->hand[cardChoice].place, "Protected") == 0){
+                    printf("Card is protected choose another card\n");
+                }
+                else{
+                    printf("Which card would you like to move two to the right?(Cannot be 0 or 1)\n");
+                    while (!validInput4){
+                        scanf("%d", &moveCard);
+                        moveCard--;
+                        if (moveCard > 1){
+                            validInput4 = true;
+                            break;
+                        }
+                        else{
+                            printf("Invalid choose another card\n");
+                        }
+                    }
+                    temp = player->hand[moveCard];
+                    for (int i = 4; i > 2; i--) {
+                        player->hand[i] = player->hand[i - 1];
+                    }
+                    player->hand[moveCard - 2] = temp;
+                }
+            }
+            else if (strcmp(centerCards[cardChoice].action, "swapAdjacent") == 0){
+                if (strcmp(player->hand[cardChoice].place, "Protected") == 0){
+                    printf("Card is protected choose another card\n");
+                }
+                else{
+                    printf("Which card from your hand would you like to swap with its neighbor (left or right)\n");
+                    scanf("%d", &moveCard);
+                    moveCard--;
+                    printf("Would you like to swap with Option %d or Option %d?", moveCard - 1, moveCard + 1);
+                    while (!validInput4){
+                        scanf("%d", &moveCard2);
+                        moveCard2--;
+                        if (moveCard2 == moveCard - 1 || moveCard2 == moveCard + 1){
+                            validInput4 = true;
+                            break;
+                        }
+                        else{
+                            printf("Please select either Option %d or Option %d \n", moveCard - 1, moveCard + 1);
+                        }
+                    }
+                    //swaps cards
+                    temp = cards[moveCard];
+                    cards[moveCard] = cards[moveCard2];
+                    cards[moveCard2] = temp;
+                    //makes centerCard unusable
+                    strcpy(centerCards[cardChoice].place, "Discard");
+                    validInput3 = true;
+                }
+            }
+            else if (strcmp(centerCards[cardChoice].action, "removeMiddle") == 0){
+                    printf("Swapping middle card in your and your opponents hands with new card (unless opponents card is not protected)\n");
+                    for (int j = 0; j < 1; j++) {
+                        int rando = rand() % 84;
+                        if (strcmp(cards[rando].place, "Hand") == 0 ||
+                            strcmp(cards[rando].place, "Discard") == 0 ||
+                            strcmp(cards[rando].place, "Center") == 0) {
+                            j--;
+                        }
+                        else {
+                            temp = player->hand[3];
+                            strcpy(cards[rando].place, "Hand");
+                            player->hand[3] = cards[rando];
+                            centerCards[cardTable+2] = temp;
+                        }
+                    }
+                if (cardTable == 0){
+                    cardTable++;
+                }
+                    strcpy(centerCards[cardChoice].place, "Discard");
+                    removeMiddle = true;
+                    validInput3 = true;
+                    cardPicked = true;
+            }
+            else if (strcmp(centerCards[cardChoice].action, "removeRight") == 0){
+                printf("Swapping last card in your and your opponents hands with new card (unless opponents card is not protected)\n");
+                    for (int j = 0; j < 1; j++) {
+                        int rando = rand() % 84;
+                        if (strcmp(cards[rando].place, "Hand") == 0 ||
+                            strcmp(cards[rando].place, "Discard") == 0 ||
+                            strcmp(cards[rando].place, "Center") == 0) {
+                            j--;
+                        } else {
+                            temp = player->hand[6];
+                            strcpy(cards[rando].place, "Hand");
+                            player->hand[6] = cards[rando];
+                            centerCards[cardTable+2] = temp;
+                        }
+                    }
+                        if (cardTable == 0){
+                            cardTable++;
+                        }
+                    strcpy(centerCards[cardChoice].place, "Discard");
+                    removeRight = true;
+                    validInput3 = true;
+                    cardPicked = true;
+            }
+            else if (strcmp(centerCards[cardChoice].action, "removeLeft") == 0){
+
+                    printf("Swapping first card in your and your opponents hands with new card (unless opponents card is not protected)\n");
+                    for (int j = 0; j < 1; j++) {
+                        int rando = rand() % 84;
+                        if (strcmp(cards[rando].place, "Hand") == 0 ||
+                            strcmp(cards[rando].place, "Discard") == 0 ||
+                            strcmp(cards[rando].place, "Center") == 0) {
+                            j--;
+                        } else {
+                            temp = player->hand[0];
+                            strcpy(cards[rando].place, "Hand");
+                            player->hand[0] = cards[rando];
+                            centerCards[cardTable+2] = temp;
+                        }
+                    }
+                         if (cardTable == 0){
+                            cardTable++;
+                        }
+                    strcpy(centerCards[cardChoice].place, "Discard");
+                    removeLeft = true;
+                    validInput3 = true;
+                    cardPicked = true;
+            }
+            else if (strcmp(centerCards[cardChoice].action, "swapSkip1Card") == 0){
+                if (strcmp(player->hand[cardChoice].place, "Protected") == 0){
+                    printf("Card is protected choose another card");
+                }
+                else{
+                    printf("Which card from your hand would you like to swap with its neighbor one over (left or right if possible)\n");
+                    while (!validInput4){
+                        scanf("%d", &moveCard);
+                        moveCard--;
+                        if (moveCard >= 0 && moveCard <=6){
+                            validInput4 = true;
+                            break;
+                        }
+                        else{
+                            printf("Please select a card 1 - 7");
+                        }
+                    }
+                    validInput4 = false;
+
+                    if (moveCard - 2 <= 1 && moveCard + 2 <= 6){
+                        printf("Would you like to swap with Option %d or Option %d?", moveCard - 2, moveCard + 2);
+                        while (!validInput4){
+                            scanf("%d", &moveCard2);
+                            moveCard2--;
+                            if (moveCard2 == moveCard + 2 || moveCard2 == moveCard - 2){
+                                validInput4 = true;
+                                break;
+                            }
+                            else{
+                                printf("Please select a card 1 - 7");
+                            }
+                        }
+                        temp = cards[moveCard];
+                        cards[moveCard] = cards[moveCard2];
+                        cards[moveCard2] = temp;
+                    }
+                    else if (moveCard - 2 <= 1){
+                        //move it 2 forward
+                        temp = cards[moveCard];
+                        cards[moveCard] = cards[moveCard + 2];
+                        cards[moveCard + 2] = temp;
+                    }
+                    else{
+                        // move it 2 back
+                        temp = cards[moveCard];
+                        cards[moveCard] = cards[moveCard - 2];
+                        cards[moveCard - 2] = temp;
+                    }
+                }
+                strcpy(centerCards[cardChoice].place, "Discard");
+                validInput3 = true;
+            }
+        }
+        printf("New deck:\n");
+        for (int i = 0; i < 7; i++) {
+            printf("|%-12s| ", player->hand[i].action);
+        }
+        printf("\n");
+        for (int i = 0; i < 7; i++) {
+            printf("|     %d     | ", player->hand[i].value);
+        }
+        printf("\n");
+        for (int i = 0; i < 7; i++) {
+            printf("|  Option:[%d]| ", i + 1);
+        }
+        printf("\n");
+
+    }
 }
 
 bool winner(Player* player){
