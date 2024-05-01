@@ -8,7 +8,7 @@
 typedef struct {
     int value;
     char action[15];
-    char place[10]; //i.e in hand, center of table, or in deck or in used pile
+    char place[15]; //i.e in hand, center of table, or in deck or in used pile
 } card;
 typedef struct {
     card hand[7];
